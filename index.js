@@ -55,7 +55,7 @@
     //-------------------------------------------------------------------------
 
     dispatch = function (bundle) {
-        var background, digest, program;
+        var background, content, digest, disabled, program;
 
         if (bundle) {
             current = bundle;
@@ -106,11 +106,33 @@
 
                 browser.emit("RELOAD");
             } else {
+                disabled = current.data && current.data[0].disabled;
+
+                if (disabled) {
+                    content = {};
+
+                    Object.keys(program.content).forEach(function (type) {
+                        var items = [];
+
+                        program.content[type].forEach(function (item) {
+                            if (disabled[item.category_id] && disabled[item.category_id][item.id]) {
+                                return;
+                            }
+
+                            items.push(item);
+                        });
+
+                        content[type] = items;
+                    });
+                } else {
+                    content = program.content;
+                }
+
                 save("content.json", JSON.stringify({
                     date: current.date,
                     time: current.time,
                     href: website,
-                    content: program.content
+                    content: content
                 }));
 
                 browser.emit("CONTENT");
