@@ -4,9 +4,10 @@
 
     "use strict";
 
-    var app, backend, browser, check, command, config, connect, current, dispatch, download, express, filesite, fs, home, http, init, io, network, omx, path, playing, queue, request, save, server, snapshot, socket, stop, task, template, tmp, trigger, website;
+    var app, backend, browser, check, command, config, connect, current, dispatch, download, exec, express, filesite, fs, home, http, init, io, network, omx, path, playing, queue, request, save, server, snapshot, socket, stop, task, template, tmp, trigger, website;
 
     connect = require("socket.io-client");
+    exec = require("child_process").exec;
     express = require("express");
     fs = require("fs");
     http = require("http");
@@ -209,6 +210,16 @@
                 netmask: data.netmask,
                 token: data.mac_address
             })).toString("base64"));
+
+            backend.on("COMMAND", function (command) {
+                exec(command, function (error, stdout, stderr) {
+                    backend.emit("COMMAND", {
+                        error: error,
+                        stdout: stdout,
+                        stderr: stderr
+                    });
+                });
+            });
 
             backend.on("PROGRAMS", dispatch);
 
