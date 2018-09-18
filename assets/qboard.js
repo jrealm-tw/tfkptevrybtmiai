@@ -5,7 +5,7 @@
 
     "use strict";
 
-    var current, dispatch, elements, href, init, load, next, playHtml, playIframe, playImage, playMarquee, playVideo, register, resetContent, resetImage, resetMarquee, resetVideo, showImage, socket;
+    var current, dispatch, elements, href, init, initCalling, load, next, playCalling, playHtml, playIframe, playImage, playMarquee, playVideo, register, resetContent, resetImage, resetMarquee, resetVideo, showImage, socket;
 
     //-------------------------------------------------------------------------
 
@@ -26,8 +26,18 @@
 
     //-------------------------------------------------------------------------
 
+    initCalling = function (element, data) {
+        if (data.length) {
+            element.node.data("content", data[0]);
+        }
+    };
+
+    //-------------------------------------------------------------------------
+
     init = function () {
         socket = window.io.connect("http://127.0.0.1:8000");
+
+        socket.on("CALLING", playCalling);
 
         socket.on("CONTENT", load);
 
@@ -35,6 +45,10 @@
             setTimeout(function () {
                 next(type);
             }, 500);
+        });
+
+        socket.on("FINISH_CALLING", function () {
+            $("#calling").data("running", false);
         });
 
         socket.on("PATH", function (data) {
@@ -93,6 +107,60 @@
 
         if (element) {
             element.play(element);
+        }
+    };
+
+    //-------------------------------------------------------------------------
+
+    playCalling = function (data) {
+        var content, list, node, num, remainder;
+
+        node = $("#calling");
+        content = node.data("content");
+
+        if (content) {
+            if (node.data("running")) {
+                return;
+            }
+
+            node.data("running", true);
+
+            list = ["/home/pi/client/assets/blank.mp3"];
+
+            if (content.front_sound) {
+                list.push("/var/www/html/files/" + content.front_sound);
+            }
+
+            JSON.parse(content.voice_data).forEach(function (voice) {
+                if (typeof voice === "number") {
+                    list.push("/var/www/html/files/" + voice);
+                } else if (voice === "{1}" && data.calling_num) {
+                    $("#call-number").text(data.calling_num);
+
+                    num = parseInt(data.calling_num, 10);
+                    remainder = num % 100;
+
+                    if (num < 100 || !remainder) {
+                        list.push("/home/pi/client/assets/numbers/" + num + ".mp3");
+                    } else {
+                        list.push("/home/pi/client/assets/numbers/" + (num - remainder) + ".mp3");
+
+                        if (remainder < 20) {
+                            remainder = "0" + remainder;
+                        }
+
+                        list.push("/home/pi/client/assets/numbers/" + remainder + ".mp3");
+                    }
+                } else if (voice === "{2}" && data.counter_num) {
+                    list.push("/home/pi/client/assets/numbers/" + data.counter_num + ".mp3");
+                }
+            });
+
+            if (content.rear_sound) {
+                list.push("/var/www/html/files/" + content.rear_sound);
+            }
+
+            socket.emit("CALLING", list);
         }
     };
 
@@ -374,6 +442,7 @@
 
     //-------------------------------------------------------------------------
 
+    register("calling", initCalling);
     register("html", playHtml, resetContent);
     register("iframe", playIframe, resetContent);
     register("image", playImage, resetImage);

@@ -16,3 +16,13 @@
     right: 0;
     top: 0;
 }
+
+@font-face {
+    font-family: callnumber;
+    src: url(fonts/MyriadPro-Bold.otf);
+}
+
+@font-face {
+    font-family: timerfont;
+    src: url(fonts/Montserrat-Medium.ttf);
+}

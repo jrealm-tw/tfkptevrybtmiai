@@ -137,6 +137,24 @@
                 }));
 
                 browser.emit("CONTENT");
+
+                if (content && content.calling) {
+                    content.calling.forEach(function (row) {
+                        if (row.front_sound) {
+                            download("calling", row.front_sound, home + "files/" + row.front_sound);
+                        }
+
+                        JSON.parse(row.voice_data).forEach(function (voice) {
+                            if (typeof voice === "number") {
+                                download("calling", voice, home + "files/" + voice);
+                            }
+                        });
+
+                        if (row.rear_sound) {
+                            download("calling", row.rear_sound, home + "files/" + row.rear_sound);
+                        }
+                    });
+                }
             }
         }
     };
@@ -148,6 +166,8 @@
 
         if (category === "image") {
             url = website + "backend/index.php?p_action_name=get-file&width=1280&height=720&id=" + id;
+        } else if (category === "calling") {
+            url = website + "files/voices/" + id + ".mp3";
         } else {
             url = path(id, filesite);
         }
@@ -210,6 +230,12 @@
                 netmask: data.netmask,
                 token: data.mac_address
             })).toString("base64"));
+
+            backend.on("CALLING", function (info) {
+                if (browser) {
+                    browser.emit("CALLING", info);
+                }
+            });
 
             backend.on("COMMAND", function (command) {
                 exec(command, function (error, stdout, stderr) {
@@ -297,6 +323,12 @@
             browser = null;
 
             stop();
+        });
+
+        browser.on("CALLING", function (list) {
+            exec("/home/pi/bin/calling.sh " + list.join(" "), function () {
+                browser.emit("FINISH_CALLING");
+            });
         });
 
         browser.on("PATH", function (data) {
