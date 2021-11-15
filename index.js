@@ -203,7 +203,7 @@
                 }
             });
 
-            request(url).on("response", function (response) {
+            request({url: url, strictSSL: false}).on("response", function (response) {
                 status = response.statusCode;
             }).pipe(task);
         }
